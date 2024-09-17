@@ -1,4 +1,4 @@
-__version__ = "0.2.4"
+__version__ = "0.2.2"
 
 import logging
 import math
@@ -355,13 +355,6 @@ class Encoder:
             return MMDBTypeID.DOUBLE
         raise TypeError(f"unknown type {value_type}")
 
-    def _freeze(self, value):
-        if isinstance(value, dict):
-            return tuple((k, self._freeze(v)) for k, v in value.items())
-        elif isinstance(value, list):
-            return tuple(self._freeze(v) for v in value)
-        return value
-
     def encode_meta(self, meta):
         res = self._make_header(MMDBTypeID.MAP, len(meta))
         meta_type = {
@@ -380,9 +373,8 @@ class Encoder:
 
     def encode(self, value, type_id=None):
         if self.cache:
-            cache_key = self._freeze(value)
             try:
-                return self.data_cache[cache_key]
+                return self.data_cache[id(value)]
             except KeyError:
                 pass
 
@@ -409,7 +401,7 @@ class Encoder:
                 pointer_position = self.data_pointer
                 self.data_pointer += len(res)
                 pointer = self.encode(pointer_position, 1)
-                self.data_cache[cache_key] = pointer
+                self.data_cache[id(value)] = pointer
                 return pointer
         return res
 
